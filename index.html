@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Leerkrachtenportaal</title>
+  <style>
+    body { font-family: sans-serif; margin: 0; background: #f8f9fa; }
+    header { background: #343a40; color: white; padding: 15px; display: flex; justify-content: space-between; }
+    main { padding: 20px; max-width: 900px; margin: auto; }
+    section { background: white; padding: 15px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    input, textarea, select, button { padding: 8px; margin: 5px 0; border-radius: 4px; border: 1px solid #ccc; width: 100%; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background: #f1f1f1; }
+    button { background: #007bff; color: white; border: none; cursor: pointer; }
+    button.danger { background: #dc3545; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+<script>
+let loggedIn = localStorage.getItem('teacherLoggedIn') === 'true';
+let students = JSON.parse(localStorage.getItem('students') || '[]');
+
+function save() {
+  localStorage.setItem('students', JSON.stringify(students));
+}
+
+function renderLogin() {
+  document.getElementById('app').innerHTML = `
+    <main style="max-width: 400px; margin: 100px auto; text-align: center;">
+      <h2>Leerkracht Login</h2>
+      <input type="password" id="password" placeholder="Wachtwoord">
+      <button onclick="login()">Login</button>
+    </main>`;
+}
+
+function login() {
+  const pwd = document.getElementById('password').value;
+  if (pwd === 'school') {
+    localStorage.setItem('teacherLoggedIn', 'true');
+    loggedIn = true;
+    renderApp();
+  } else {
+    alert("Verkeerd wachtwoord");
+  }
+}
+
+function logout() {
+  localStorage.setItem('teacherLoggedIn', 'false');
+  location.reload();
+}
+
+function renderApp() {
+  document.getElementById('app').innerHTML = `
+    <header>
+      <div>Leerkrachtenportaal</div>
+      <button onclick="logout()">Uitloggen</button>
+    </header>
+    <main>
+      <section>
+        <h3>Leerling toevoegen</h3>
+        <input id="studentName" placeholder="Naam leerling">
+        <input id="studentEmail" type="email" placeholder="E-mail">
+        <button onclick="addStudent()">Toevoegen</button>
+      </section>
+
+      <section>
+        <h3>Aanwezigheden & Scores</h3>
+        <table>
+          <tr><th>Naam</th><th>Aanwezig</th><th>Score</th><th>Notitie</th><th>Actie</th></tr>
+          ${students.map((s, i) => `
+            <tr>
+              <td>${s.name}</td>
+              <td>
+                <select onchange="updatePresence(${i}, this.value)">
+                  <option value="aanwezig" ${s.presence === 'aanwezig' ? 'selected' : ''}>Aanwezig</option>
+                  <option value="afwezig" ${s.presence === 'afwezig' ? 'selected' : ''}>Afwezig</option>
+                  <option value="te laat" ${s.presence === 'te laat' ? 'selected' : ''}>Te laat</option>
+                </select>
+              </td>
+              <td><input type="number" value="${s.score || ''}" onchange="updateScore(${i}, this.value)"></td>
+              <td><textarea onchange="updateNote(${i}, this.value)">${s.note || ''}</textarea></td>
+              <td><button class="danger" onclick="removeStudent(${i})">Verwijder</button></td>
+            </tr>`).join('')}
+        </table>
+      </section>
+
+      <section>
+        <h3>E-mail versturen</h3>
+        <select id="emailTo">
+          ${students.map((s, i) => `<option value="${i}">${s.name} (${s.email})</option>`).join('')}
+        </select>
+        <input id="emailSubject" placeholder="Onderwerp">
+        <textarea id="emailBody" placeholder="Berichtinhoud"></textarea>
+        <button onclick="sendMail()">Stuur E-mail (simulatie)</button>
+      </section>
+    </main>
+  `;
+}
+
+function addStudent() {
+  const name = document.getElementById('studentName').value.trim();
+  const email = document.getElementById('studentEmail').value.trim();
+  if (!name || !email) return alert("Naam en e-mail verplicht");
+  students.push({ name, email, presence: 'aanwezig', score: '', note: '' });
+  save();
+  renderApp();
+}
+
+function removeStudent(index) {
+  if (confirm("Zeker weten?")) {
+    students.splice(index, 1);
+    save();
+    renderApp();
+  }
+}
+
+function updatePresence(i, val) {
+  students[i].presence = val;
+  save();
+}
+
+function updateScore(i, val) {
+  students[i].score = parseInt(val) || '';
+  save();
+}
+
+function updateNote(i, val) {
+  students[i].note = val;
+  save();
+}
+
+function sendMail() {
+  const index = document.getElementById('emailTo').value;
+  const subject = document.getElementById('emailSubject').value;
+  const body = document.getElementById('emailBody').value;
+  const email = students[index].email;
+  alert(`Simulatie: E-mail verzonden naar ${email}\nOnderwerp: ${subject}\n\n${body}`);
+}
+
+loggedIn ? renderApp() : renderLogin();
+</script>
+</body>
+</html>
