@@ -6,9 +6,7 @@
 <title>Leerkracht Portaal</title>
 <style>
   /* Reset */
-  * {
-    box-sizing: border-box;
-  }
+  * { box-sizing: border-box; }
   body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0; background: #f5f7fa; color: #333;
@@ -19,9 +17,7 @@
     padding: 15px 20px;
     display: flex; justify-content: space-between; align-items: center;
   }
-  header h1 {
-    margin: 0; font-weight: 600;
-  }
+  header h1 { margin: 0; font-weight: 600; }
   button {
     cursor: pointer;
     background: #0072c6;
@@ -43,9 +39,7 @@
     border-radius: 8px;
     padding: 20px 30px;
   }
-  section {
-    margin-bottom: 30px;
-  }
+  section { margin-bottom: 30px; }
   h2 {
     border-bottom: 2px solid #0072c6;
     padding-bottom: 8px;
@@ -90,11 +84,6 @@
     text-align: center;
     color: #0072c6;
   }
-  .flex-row {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-  }
   .mail-area {
     width: 100%;
     height: 80px;
@@ -110,6 +99,21 @@
     font-size: 0.9rem;
     color: #888;
   }
+  .details-btn {
+    background: #3498db;
+    margin-right: 5px;
+  }
+  .delete-btn {
+    background: #e74c3c;
+  }
+  .back-btn {
+    background: #777;
+    margin-bottom: 15px;
+  }
+  input[type=checkbox] {
+    width: 18px; height: 18px;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
@@ -118,35 +122,32 @@
 <script>
 (() => {
   const STORAGE_KEY = 'leerkracht_portaal_data';
-  const PASSWORD = 'lesgeven123'; // eenvoudig wachtwoord
+  const PASSWORD = 'lesgeven123';
 
   let state = {
     loggedIn: false,
-    leerlingen: [], // lijst leerlingen: {id, naam, email, scores: {vak: cijfer}, aanwezigheden: {datum: boolean} }
-    currentMail: '',
+    leerlingen: [], // {id, naam, email, scores: {vak:cijfer}, aanwezigheden: {datum:boolean} }
+    currentDetailsId: null,
   };
 
-  // Laad data uit localStorage
   function loadData() {
     const data = localStorage.getItem(STORAGE_KEY);
     if (data) {
       state.leerlingen = JSON.parse(data);
-    } else {
-      state.leerlingen = [];
     }
   }
-  // Sla data op
   function saveData() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.leerlingen));
   }
-
-  // --- Rendering functies ---
+  function generateId() {
+    return 'id-'+Math.random().toString(36).substr(2,9);
+  }
 
   function renderLogin() {
     document.getElementById('app').innerHTML = `
       <div class="login-container">
         <h2>Leerkracht Portaal Login</h2>
-        <label>Wachtwoord</label>
+        <label for="loginPwd">Wachtwoord</label>
         <input type="password" id="loginPwd" placeholder="Wachtwoord" />
         <button onclick="app.login()">Inloggen</button>
       </div>
@@ -162,9 +163,9 @@
       <main>
         <section id="leerlingenSectie">
           <h2>Leerlingen beheren</h2>
-          <label>Naam nieuwe leerling</label>
+          <label for="newNaam">Naam nieuwe leerling</label>
           <input type="text" id="newNaam" placeholder="Bijv. Jan Jansen" />
-          <label>E-mail</label>
+          <label for="newEmail">E-mail</label>
           <input type="email" id="newEmail" placeholder="jan@example.com" />
           <button onclick="app.addLeerling()">Voeg leerling toe</button>
 
@@ -178,8 +179,8 @@
                   <td>${l.naam}</td>
                   <td>${l.email}</td>
                   <td>
-                    <button onclick="app.openDetails('${l.id}')">Details</button>
-                    <button onclick="app.verwijderLeerling('${l.id}')">Verwijder</button>
+                    <button class="details-btn" onclick="app.openDetails('${l.id}')">Details</button>
+                    <button class="delete-btn" onclick="app.verwijderLeerling('${l.id}')">Verwijder</button>
                   </td>
                 </tr>
               `).join('')}
@@ -189,17 +190,17 @@
 
         <section id="detailsSectie" style="display:none;">
           <h2>Leerling Details</h2>
-          <button onclick="app.sluitDetails()">Terug</button>
+          <button class="back-btn" onclick="app.sluitDetails()">Terug</button>
           <div id="detailsContent"></div>
         </section>
 
         <section id="mailSectie">
           <h2>Mail doorsturen</h2>
-          <label>Ontvanger E-mail</label>
+          <label for="mailTo">Ontvanger E-mail</label>
           <input type="email" id="mailTo" placeholder="voorbeeld@school.be" />
-          <label>Onderwerp</label>
+          <label for="mailSubject">Onderwerp</label>
           <input type="text" id="mailSubject" placeholder="Onderwerp" />
-          <label>Bericht</label>
+          <label for="mailBody">Bericht</label>
           <textarea id="mailBody" class="mail-area" placeholder="Typ hier je bericht"></textarea>
           <button onclick="app.sendMail()">Verstuur mail (simulatie)</button>
           <p id="mailStatus" style="color:green;"></p>
@@ -212,37 +213,162 @@
     const leerling = state.leerlingen.find(l => l.id === id);
     if (!leerling) return;
 
-    // Maak tabel voor scores en aanwezigheden
-    let scoresRows = '';
     const vakken = ['Nederlands', 'Engels', 'Wiskunde', 'Geschiedenis', 'Wetenschappen'];
-    vakken.forEach(vak => {
-      const cijfer = leerling.scores[vak] || '';
-      scoresRows += `
+
+    let scoresRows = vakken.map(vak => {
+      const cijfer = leerling.scores[vak] !== undefined ? leerling.scores[vak] : '';
+      return `
         <tr>
           <td>${vak}</td>
           <td><input type="number" min="0" max="20" step="0.1" value="${cijfer}" onchange="app.updateScore('${id}', '${vak}', this.value)" /></td>
-        </tr>
-      `;
-    });
+        </tr>`;
+    }).join('');
 
-    // Aanwezigheid tabel (laatste 7 dagen)
+    // Laatste 7 dagen aanwezigheden
     let aanwezigRows = '';
     const vandaag = new Date();
-    for (let i = 6; i >= 0; i--) {
+    for(let i=6; i>=0; i--) {
       const d = new Date(vandaag);
       d.setDate(vandaag.getDate() - i);
       const datumStr = d.toISOString().slice(0,10);
-      const aanwezig = leerling.aanwezigheden[datumStr] || false;
+      const aanwezig = leerling.aanwezigheden && leerling.aanwezigheden[datumStr] || false;
       aanwezigRows += `
         <tr>
           <td>${datumStr}</td>
-          <td><input type="checkbox" ${aanwezig ? 'checked' : ''} onchange="app.updateAanwezigheid('${id}', '${datumStr}', this.checked)" /></td>
-        </tr>
-      `;
+          <td><input type="checkbox" ${aanwezig ? 'checked' : ''} onchange="app.toggleAanwezigheid('${id}', '${datumStr}', this.checked)" /></td>
+        </tr>`;
     }
 
     document.getElementById('detailsContent').innerHTML = `
-      <h3>${leerling.naam} - Details</h3>
-      <h4>Scores invullen</h4>
+      <h3>${leerling.naam} (${leerling.email})</h3>
+      <h4>Scores per vak (0-20)</h4>
       <table>
-        <thead><tr><th>Vak
+        <thead><tr><th>Vak</th><th>Cijfer</th></tr></thead>
+        <tbody>${scoresRows}</tbody>
+      </table>
+      <h4>Aanwezigheid laatste 7 dagen</h4>
+      <table>
+        <thead><tr><th>Datum</th><th>Aanwezig</th></tr></thead>
+        <tbody>${aanwezigRows}</tbody>
+      </table>
+    `;
+  }
+
+  window.app = {
+    login() {
+      const pwd = document.getElementById('loginPwd').value;
+      if (pwd === PASSWORD) {
+        state.loggedIn = true;
+        loadData();
+        renderApp();
+      } else {
+        alert('Onjuist wachtwoord');
+      }
+    },
+    logout() {
+      state.loggedIn = false;
+      state.currentDetailsId = null;
+      renderLogin();
+    },
+    addLeerling() {
+      const naam = document.getElementById('newNaam').value.trim();
+      const email = document.getElementById('newEmail').value.trim();
+      if (!naam || !email) {
+        alert('Vul naam en e-mail in');
+        return;
+      }
+      // Check email valid
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if(!emailRegex.test(email)) {
+        alert('Vul een geldig e-mailadres in');
+        return;
+      }
+      // Check duplicate email
+      if(state.leerlingen.some(l => l.email.toLowerCase() === email.toLowerCase())) {
+        alert('Er bestaat al een leerling met dit e-mailadres');
+        return;
+      }
+
+      state.leerlingen.push({
+        id: generateId(),
+        naam,
+        email,
+        scores: {},
+        aanwezigheden: {},
+      });
+      saveData();
+      document.getElementById('newNaam').value = '';
+      document.getElementById('newEmail').value = '';
+      renderApp();
+    },
+    verwijderLeerling(id) {
+      if(confirm('Weet je zeker dat je deze leerling wilt verwijderen?')) {
+        state.leerlingen = state.leerlingen.filter(l => l.id !== id);
+        saveData();
+        if(state.currentDetailsId === id) {
+          state.currentDetailsId = null;
+        }
+        renderApp();
+      }
+    },
+    openDetails(id) {
+      state.currentDetailsId = id;
+      document.getElementById('leerlingenSectie').style.display = 'none';
+      document.getElementById('detailsSectie').style.display = 'block';
+      renderLeerlingDetails(id);
+    },
+    sluitDetails() {
+      state.currentDetailsId = null;
+      document.getElementById('detailsSectie').style.display = 'none';
+      document.getElementById('leerlingenSectie').style.display = 'block';
+    },
+    updateScore(id, vak, value) {
+      const leerling = state.leerlingen.find(l => l.id === id);
+      if (!leerling) return;
+      let num = parseFloat(value);
+      if(isNaN(num)) num = '';
+      if(num !== '' && (num < 0 || num > 20)) {
+        alert('Cijfer moet tussen 0 en 20 zijn');
+        renderLeerlingDetails(id);
+        return;
+      }
+      leerling.scores[vak] = num === '' ? undefined : num;
+      saveData();
+    },
+    toggleAanwezigheid(id, datum, checked) {
+      const leerling = state.leerlingen.find(l => l.id === id);
+      if (!leerling) return;
+      if(!leerling.aanwezigheden) leerling.aanwezigheden = {};
+      leerling.aanwezigheden[datum] = checked;
+      saveData();
+    },
+    sendMail() {
+      const to = document.getElementById('mailTo').value.trim();
+      const subject = document.getElementById('mailSubject').value.trim();
+      const body = document.getElementById('mailBody').value.trim();
+      if(!to || !subject || !body) {
+        alert('Vul alle velden in de mail in');
+        return;
+      }
+      // Simulatie versturen mail
+      document.getElementById('mailStatus').textContent = `Mail naar ${to} met onderwerp "${subject}" succesvol verzonden! (Simulatie)`;
+      document.getElementById('mailTo').value = '';
+      document.getElementById('mailSubject').value = '';
+      document.getElementById('mailBody').value = '';
+      setTimeout(() => {
+        document.getElementById('mailStatus').textContent = '';
+      }, 5000);
+    }
+  };
+
+  // Init
+  if (!state.loggedIn) {
+    renderLogin();
+  } else {
+    loadData();
+    renderApp();
+  }
+})();
+</script>
+</body>
+</html>
