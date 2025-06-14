@@ -1,371 +1,88 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Leerkracht Portaal</title>
-<style>
-  body { font-family: Arial, sans-serif; background:#f4f6f9; margin:0; padding:0;}
-  header { background:#2c3e50; color:#fff; padding:15px; display:flex; justify-content:space-between; align-items:center; }
-  h1, h2 { margin:0; }
-  .container { max-width: 900px; margin: 20px auto; padding: 15px; background: white; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.1);}
-  button { padding:8px 12px; margin:5px 0; cursor:pointer; background:#3498db; border:none; border-radius:4px; color:#fff; transition: background 0.3s;}
-  button:hover { background:#2980b9; }
-  input, select, textarea { padding:8px; margin:5px 0 15px 0; width:100%; box-sizing: border-box; border:1px solid #ccc; border-radius:4px; }
-  label { font-weight:bold; display:block; margin-bottom:5px; }
-  table { border-collapse: collapse; width: 100%; }
-  th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
-  tr:hover { background-color: #f1f1f1; }
-  .hidden { display:none; }
-  .flex-row { display:flex; gap: 20px; flex-wrap: wrap; }
-  .flex-item { flex: 1 1 300px; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Leerkrachtenportaal - Scores</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f4f6f9;
+      padding: 20px;
+    }
+    h1 {
+      color: #2c3e50;
+    }
+    .score-section {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      max-width: 500px;
+      margin: auto;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px 0;
+      width: 100%;
+      font-size: 16px;
+    }
+    button {
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      padding: 8px;
+      border-bottom: 1px solid #ddd;
+    }
+  </style>
 </head>
 <body>
+  <h1>Leerlingenscores</h1>
+  <div class="score-section">
+    <input type="text" id="studentName" placeholder="Naam van de leerling" />
+    <input type="number" id="studentScore" placeholder="Score op 100" />
+    <button onclick="addScore()">Score toevoegen</button>
 
-<header>
-  <h1>Leerkracht Portaal</h1>
-  <button id="logoutBtn" class="hidden">Uitloggen</button>
-</header>
-
-<div class="container" id="loginScreen">
-  <h2>Inloggen</h2>
-  <label for="password">Wachtwoord:</label>
-  <input type="password" id="password" placeholder="Voer wachtwoord in" />
-  <button onclick="login()">Inloggen</button>
-  <p id="loginMessage" style="color:red;"></p>
-</div>
-
-<div class="container hidden" id="dashboard">
-  <h2>Dashboard</h2>
-  <div class="flex-row">
-    <div class="flex-item">
-      <h3>Leerlingenlijst</h3>
-      <table id="studentsTable">
-        <thead>
-          <tr><th>Naam</th><th>Email</th><th>Acties</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <button onclick="showAddStudent()">Nieuwe leerling toevoegen</button>
-
-      <div id="addStudentForm" class="hidden">
-        <h4>Nieuwe leerling</h4>
-        <label>Naam:</label>
-        <input type="text" id="studentName" placeholder="Naam leerling" />
-        <label>Email:</label>
-        <input type="email" id="studentEmail" placeholder="Email leerling" />
-        <button onclick="addStudent()">Toevoegen</button>
-        <button onclick="hideAddStudent()">Annuleren</button>
-      </div>
-    </div>
-
-    <div class="flex-item">
-      <h3>Scores invoeren</h3>
-      <label>Leerling:</label>
-      <select id="scoreStudentSelect"></select>
-      <label>Vak:</label>
-      <input type="text" id="scoreSubject" placeholder="Bijv. Wiskunde" />
-      <label>Score:</label>
-      <input type="number" id="scoreValue" min="0" max="100" placeholder="Score (0-100)" />
-      <button onclick="addScore()">Score toevoegen</button>
-
-      <h4>Scores</h4>
-      <table id="scoresTable">
-        <thead>
-          <tr><th>Leerling</th><th>Vak</th><th>Score</th><th>Acties</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
+    <h3>Scorelijst</h3>
+    <ul id="scoreList"></ul>
   </div>
 
-  <div class="flex-row" style="margin-top:30px;">
-    <div class="flex-item">
-      <h3>Aanwezigheid bijhouden</h3>
-      <label>Datum:</label>
-      <input type="date" id="attendanceDate" />
-      <label>Leerling:</label>
-      <select id="attendanceStudentSelect"></select>
-      <label>Aanwezigheid:</label>
-      <select id="attendanceStatus">
-        <option value="aanwezig">Aanwezig</option>
-        <option value="afwezig">Afwezig</option>
-        <option value="te laat">Te laat</option>
-      </select>
-      <button onclick="addAttendance()">Toevoegen</button>
+  <script>
+    const scoreListElement = document.getElementById('scoreList');
+    let scores = JSON.parse(localStorage.getItem('scores') || '[]');
 
-      <h4>Aanwezigheidsregister</h4>
-      <table id="attendanceTable">
-        <thead>
-          <tr><th>Datum</th><th>Leerling</th><th>Status</th><th>Acties</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
-    <div class="flex-item">
-      <h3>Mails versturen</h3>
-      <label>Ontvanger:</label>
-      <select id="mailRecipient"></select>
-      <label>Onderwerp:</label>
-      <input type="text" id="mailSubject" placeholder="Onderwerp" />
-      <label>Bericht:</label>
-      <textarea id="mailBody" rows="6" placeholder="Typ hier je bericht"></textarea>
-      <button onclick="sendMail()">Verstuur mail</button>
-      <p id="mailStatus" style="color:green;"></p>
-    </div>
-  </div>
-</div>
-
-<script>
-  // -- Data management --
-
-  let loggedIn = false;
-  const passwordCorrect = 'lesgeven123';
-
-  // Data structs in localStorage keys:
-  // students: [{id, name, email}]
-  // scores: [{id, studentId, subject, score}]
-  // attendance: [{id, date, studentId, status}]
-
-  function saveData(key, data) {
-    localStorage.setItem(key, JSON.stringify(data));
-  }
-  function loadData(key) {
-    return JSON.parse(localStorage.getItem(key) || '[]');
-  }
-
-  // --- Login ---
-  function login() {
-    const pw = document.getElementById('password').value;
-    const msg = document.getElementById('loginMessage');
-    if (pw === passwordCorrect) {
-      loggedIn = true;
-      document.getElementById('loginScreen').classList.add('hidden');
-      document.getElementById('dashboard').classList.remove('hidden');
-      document.getElementById('logoutBtn').classList.remove('hidden');
-      msg.textContent = '';
-      loadAllData();
-    } else {
-      msg.textContent = 'Onjuist wachtwoord.';
+    function renderScores() {
+      scoreListElement.innerHTML = scores.map(score => `<li><strong>${score.name}</strong>: ${score.score}/100</li>`).join('');
     }
-  }
-  document.getElementById('logoutBtn').onclick = function() {
-    loggedIn = false;
-    document.getElementById('loginScreen').classList.remove('hidden');
-    document.getElementById('dashboard').classList.add('hidden');
-    document.getElementById('logoutBtn').classList.add('hidden');
-    clearAllInputs();
-  }
 
-  // --- Leerlingen ---
+    function addScore() {
+      const nameInput = document.getElementById('studentName');
+      const scoreInput = document.getElementById('studentScore');
+      const name = nameInput.value.trim();
+      const score = parseInt(scoreInput.value);
 
-  function loadAllData() {
-    loadStudents();
-    loadScores();
-    loadAttendance();
-    populateSelects();
-  }
+      if (!name || isNaN(score)) {
+        alert("Vul zowel een naam als een geldige score in.");
+        return;
+      }
 
-  // Leerlingen opslaan / laden
-  function loadStudents() {
-    const students = loadData('students');
-    const tbody = document.querySelector('#studentsTable tbody');
-    tbody.innerHTML = '';
-    students.forEach(s => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${s.name}</td>
-        <td>${s.email}</td>
-        <td><button onclick="deleteStudent('${s.id}')">Verwijder</button></td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-  function showAddStudent() {
-    document.getElementById('addStudentForm').classList.remove('hidden');
-  }
-  function hideAddStudent() {
-    document.getElementById('addStudentForm').classList.add('hidden');
-    clearAddStudentForm();
-  }
-  function clearAddStudentForm() {
-    document.getElementById('studentName').value = '';
-    document.getElementById('studentEmail').value = '';
-  }
-  function addStudent() {
-    const name = document.getElementById('studentName').value.trim();
-    const email = document.getElementById('studentEmail').value.trim();
-    if (!name || !email) {
-      alert('Vul naam en email in.');
-      return;
+      scores.push({ name, score });
+      localStorage.setItem('scores', JSON.stringify(scores));
+      renderScores();
+
+      nameInput.value = '';
+      scoreInput.value = '';
     }
-    const students = loadData('students');
-    const id = Date.now().toString();
-    students.push({id, name, email});
-    saveData('students', students);
-    hideAddStudent();
-    loadStudents();
-    populateSelects();
-  }
-  function deleteStudent(id) {
-    if (!confirm('Weet je zeker dat je deze leerling wilt verwijderen?')) return;
-    let students = loadData('students');
-    students = students.filter(s => s.id !== id);
-    saveData('students', students);
-    // ook scores & attendance van deze leerling verwijderen:
-    let scores = loadData('scores').filter(sc => sc.studentId !== id);
-    saveData('scores', scores);
-    let attendance = loadData('attendance').filter(a => a.studentId !== id);
-    saveData('attendance', attendance);
-    loadStudents();
-    loadScores();
-    loadAttendance();
-    populateSelects();
-  }
 
-  // --- Scores ---
-
-  function loadScores() {
-    const scores = loadData('scores');
-    const tbody = document.querySelector('#scoresTable tbody');
-    tbody.innerHTML = '';
-    scores.forEach(s => {
-      const student = findStudent(s.studentId);
-      if (!student) return; // student verwijderd?
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${student.name}</td>
-        <td>${s.subject}</td>
-        <td>${s.score}</td>
-        <td><button onclick="deleteScore('${s.id}')">Verwijder</button></td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-  function addScore() {
-    const studentId = document.getElementById('scoreStudentSelect').value;
-    const subject = document.getElementById('scoreSubject').value.trim();
-    const score = parseFloat(document.getElementById('scoreValue').value);
-    if (!studentId || !subject || isNaN(score) || score < 0 || score > 100) {
-      alert('Vul correcte gegevens in.');
-      return;
-    }
-    const scores = loadData('scores');
-    const id = Date.now().toString();
-    scores.push({id, studentId, subject, score});
-    saveData('scores', scores);
-    loadScores();
-    document.getElementById('scoreSubject').value = '';
-    document.getElementById('scoreValue').value = '';
-  }
-  function deleteScore(id) {
-    if (!confirm('Weet je zeker dat je deze score wilt verwijderen?')) return;
-    let scores = loadData('scores');
-    scores = scores.filter(s => s.id !== id);
-    saveData('scores', scores);
-    loadScores();
-  }
-
-  // --- Aanwezigheid ---
-
-  function loadAttendance() {
-    const attendance = loadData('attendance');
-    const tbody = document.querySelector('#attendanceTable tbody');
-    tbody.innerHTML = '';
-    attendance.forEach(a => {
-      const student = findStudent(a.studentId);
-      if (!student) return;
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${a.date}</td>
-        <td>${student.name}</td>
-        <td>${a.status}</td>
-        <td><button onclick="deleteAttendance('${a.id}')">Verwijder</button></td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-  function addAttendance() {
-    const date = document.getElementById('attendanceDate').value;
-    const studentId = document.getElementById('attendanceStudentSelect').value;
-    const status = document.getElementById('attendanceStatus').value;
-    if (!date || !studentId || !status) {
-      alert('Vul alle velden in.');
-      return;
-    }
-    const attendance = loadData('attendance');
-    const id = Date.now().toString();
-    attendance.push({id, date, studentId, status});
-    saveData('attendance', attendance);
-    loadAttendance();
-    document.getElementById('attendanceDate').value = '';
-  }
-  function deleteAttendance(id) {
-    if (!confirm('Weet je zeker dat je deze registratie wilt verwijderen?')) return;
-    let attendance = loadData('attendance');
-    attendance = attendance.filter(a => a.id !== id);
-    saveData('attendance', attendance);
-    loadAttendance();
-  }
-
-  // --- Mails ---
-
-  function sendMail() {
-    const recipientId = document.getElementById('mailRecipient').value;
-    const subject = document.getElementById('mailSubject').value.trim();
-    const body = document.getElementById('mailBody').value.trim();
-    if (!recipientId || !subject || !body) {
-      alert('Vul alle mailgegevens in.');
-      return;
-    }
-    const students = loadData('students');
-    const student = students.find(s => s.id === recipientId);
-    if (!student) {
-      alert('Ontvanger niet gevonden.');
-      return;
-    }
-    // Voor demo: tonen dat mail is “verstuurd”
-    document.getElementById('mailStatus').textContent = `Mail naar ${student.email} succesvol verstuurd!`;
-    // In echte app: hier mailserver koppelen
-    document.getElementById('mailSubject').value = '';
-    document.getElementById('mailBody').value = '';
-  }
-
-  // --- Hulpfuncties ---
-
-  function populateSelects() {
-    const students = loadData('students');
-    const scoreSelect = document.getElementById('scoreStudentSelect');
-    const attendanceSelect = document.getElementById('attendanceStudentSelect');
-    const mailSelect = document.getElementById('mailRecipient');
-    [scoreSelect, attendanceSelect, mailSelect].forEach(select => {
-      select.innerHTML = '<option value="">-- Kies een leerling --</option>';
-      students.forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = s.id;
-        opt.textContent = s.name;
-        select.appendChild(opt);
-      });
-    });
-  }
-  function findStudent(id) {
-    const students = loadData('students');
-    return students.find(s => s.id === id);
-  }
-  function clearAllInputs() {
-    document.getElementById('password').value = '';
-    document.getElementById('loginMessage').textContent = '';
-    hideAddStudent();
-    document.getElementById('scoreSubject').value = '';
-    document.getElementById('scoreValue').value = '';
-    document.getElementById('attendanceDate').value = '';
-    document.getElementById('mailSubject').value = '';
-    document.getElementById('mailBody').value = '';
-    document.getElementById('mailStatus').textContent = '';
-  }
-</script>
-
+    renderScores();
+  </script>
 </body>
 </html>
