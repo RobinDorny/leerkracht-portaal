@@ -1,147 +1,248 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Leerkrachtenportaal</title>
-  <style>
-    body { font-family: sans-serif; margin: 0; background: #f8f9fa; }
-    header { background: #343a40; color: white; padding: 15px; display: flex; justify-content: space-between; }
-    main { padding: 20px; max-width: 900px; margin: auto; }
-    section { background: white; padding: 15px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-    input, textarea, select, button { padding: 8px; margin: 5px 0; border-radius: 4px; border: 1px solid #ccc; width: 100%; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid #ddd; padding: 8px; }
-    th { background: #f1f1f1; }
-    button { background: #007bff; color: white; border: none; cursor: pointer; }
-    button.danger { background: #dc3545; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Leerkracht Portaal</title>
+<style>
+  /* Reset */
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0; background: #f5f7fa; color: #333;
+  }
+  header {
+    background: #0072c6;
+    color: white;
+    padding: 15px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  header h1 {
+    margin: 0; font-weight: 600;
+  }
+  button {
+    cursor: pointer;
+    background: #0072c6;
+    border: none;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  button:disabled {
+    background: #a0aec0;
+    cursor: default;
+  }
+  main {
+    max-width: 1100px;
+    margin: 30px auto;
+    background: white;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+    border-radius: 8px;
+    padding: 20px 30px;
+  }
+  section {
+    margin-bottom: 30px;
+  }
+  h2 {
+    border-bottom: 2px solid #0072c6;
+    padding-bottom: 8px;
+    margin-bottom: 15px;
+  }
+  label {
+    display: block;
+    margin-top: 12px;
+    font-weight: 600;
+  }
+  input[type=text], input[type=number], input[type=email], select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+  th, td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #ddd;
+    text-align: center;
+  }
+  th {
+    background: #0072c6;
+    color: white;
+  }
+  .login-container {
+    max-width: 360px;
+    margin: 100px auto;
+    background: white;
+    padding: 25px 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.15);
+  }
+  .login-container h2 {
+    margin-bottom: 20px;
+    text-align: center;
+    color: #0072c6;
+  }
+  .flex-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .mail-area {
+    width: 100%;
+    height: 80px;
+    margin-top: 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    padding: 8px;
+    resize: vertical;
+  }
+  .footer {
+    text-align: center;
+    padding: 10px;
+    font-size: 0.9rem;
+    color: #888;
+  }
+</style>
 </head>
 <body>
-  <div id="app"></div>
+<div id="app"></div>
 
 <script>
-let loggedIn = localStorage.getItem('teacherLoggedIn') === 'true';
-let students = JSON.parse(localStorage.getItem('students') || '[]');
+(() => {
+  const STORAGE_KEY = 'leerkracht_portaal_data';
+  const PASSWORD = 'lesgeven123'; // eenvoudig wachtwoord
 
-function save() {
-  localStorage.setItem('students', JSON.stringify(students));
-}
+  let state = {
+    loggedIn: false,
+    leerlingen: [], // lijst leerlingen: {id, naam, email, scores: {vak: cijfer}, aanwezigheden: {datum: boolean} }
+    currentMail: '',
+  };
 
-function renderLogin() {
-  document.getElementById('app').innerHTML = `
-    <main style="max-width: 400px; margin: 100px auto; text-align: center;">
-      <h2>Leerkracht Login</h2>
-      <input type="password" id="password" placeholder="Wachtwoord">
-      <button onclick="login()">Login</button>
-    </main>`;
-}
-
-function login() {
-  const pwd = document.getElementById('password').value;
-  if (pwd === 'school') {
-    localStorage.setItem('teacherLoggedIn', 'true');
-    loggedIn = true;
-    renderApp();
-  } else {
-    alert("Verkeerd wachtwoord");
+  // Laad data uit localStorage
+  function loadData() {
+    const data = localStorage.getItem(STORAGE_KEY);
+    if (data) {
+      state.leerlingen = JSON.parse(data);
+    } else {
+      state.leerlingen = [];
+    }
   }
-}
-
-function logout() {
-  localStorage.setItem('teacherLoggedIn', 'false');
-  location.reload();
-}
-
-function renderApp() {
-  document.getElementById('app').innerHTML = `
-    <header>
-      <div>Leerkrachtenportaal</div>
-      <button onclick="logout()">Uitloggen</button>
-    </header>
-    <main>
-      <section>
-        <h3>Leerling toevoegen</h3>
-        <input id="studentName" placeholder="Naam leerling">
-        <input id="studentEmail" type="email" placeholder="E-mail">
-        <button onclick="addStudent()">Toevoegen</button>
-      </section>
-
-      <section>
-        <h3>Aanwezigheden & Scores</h3>
-        <table>
-          <tr><th>Naam</th><th>Aanwezig</th><th>Score</th><th>Notitie</th><th>Actie</th></tr>
-          ${students.map((s, i) => `
-            <tr>
-              <td>${s.name}</td>
-              <td>
-                <select onchange="updatePresence(${i}, this.value)">
-                  <option value="aanwezig" ${s.presence === 'aanwezig' ? 'selected' : ''}>Aanwezig</option>
-                  <option value="afwezig" ${s.presence === 'afwezig' ? 'selected' : ''}>Afwezig</option>
-                  <option value="te laat" ${s.presence === 'te laat' ? 'selected' : ''}>Te laat</option>
-                </select>
-              </td>
-              <td><input type="number" value="${s.score || ''}" onchange="updateScore(${i}, this.value)"></td>
-              <td><textarea onchange="updateNote(${i}, this.value)">${s.note || ''}</textarea></td>
-              <td><button class="danger" onclick="removeStudent(${i})">Verwijder</button></td>
-            </tr>`).join('')}
-        </table>
-      </section>
-
-      <section>
-        <h3>E-mail versturen</h3>
-        <select id="emailTo">
-          ${students.map((s, i) => `<option value="${i}">${s.name} (${s.email})</option>`).join('')}
-        </select>
-        <input id="emailSubject" placeholder="Onderwerp">
-        <textarea id="emailBody" placeholder="Berichtinhoud"></textarea>
-        <button onclick="sendMail()">Stuur E-mail (simulatie)</button>
-      </section>
-    </main>
-  `;
-}
-
-function addStudent() {
-  const name = document.getElementById('studentName').value.trim();
-  const email = document.getElementById('studentEmail').value.trim();
-  if (!name || !email) return alert("Naam en e-mail verplicht");
-  students.push({ name, email, presence: 'aanwezig', score: '', note: '' });
-  save();
-  renderApp();
-}
-
-function removeStudent(index) {
-  if (confirm("Zeker weten?")) {
-    students.splice(index, 1);
-    save();
-    renderApp();
+  // Sla data op
+  function saveData() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.leerlingen));
   }
-}
 
-function updatePresence(i, val) {
-  students[i].presence = val;
-  save();
-}
+  // --- Rendering functies ---
 
-function updateScore(i, val) {
-  students[i].score = parseInt(val) || '';
-  save();
-}
+  function renderLogin() {
+    document.getElementById('app').innerHTML = `
+      <div class="login-container">
+        <h2>Leerkracht Portaal Login</h2>
+        <label>Wachtwoord</label>
+        <input type="password" id="loginPwd" placeholder="Wachtwoord" />
+        <button onclick="app.login()">Inloggen</button>
+      </div>
+    `;
+  }
 
-function updateNote(i, val) {
-  students[i].note = val;
-  save();
-}
+  function renderApp() {
+    document.getElementById('app').innerHTML = `
+      <header>
+        <h1>Leerkracht Portaal</h1>
+        <button onclick="app.logout()">Uitloggen</button>
+      </header>
+      <main>
+        <section id="leerlingenSectie">
+          <h2>Leerlingen beheren</h2>
+          <label>Naam nieuwe leerling</label>
+          <input type="text" id="newNaam" placeholder="Bijv. Jan Jansen" />
+          <label>E-mail</label>
+          <input type="email" id="newEmail" placeholder="jan@example.com" />
+          <button onclick="app.addLeerling()">Voeg leerling toe</button>
 
-function sendMail() {
-  const index = document.getElementById('emailTo').value;
-  const subject = document.getElementById('emailSubject').value;
-  const body = document.getElementById('emailBody').value;
-  const email = students[index].email;
-  alert(`Simulatie: E-mail verzonden naar ${email}\nOnderwerp: ${subject}\n\n${body}`);
-}
+          <table id="leerlingenTabel">
+            <thead>
+              <tr><th>Naam</th><th>E-mail</th><th>Acties</th></tr>
+            </thead>
+            <tbody>
+              ${state.leerlingen.map(l => `
+                <tr>
+                  <td>${l.naam}</td>
+                  <td>${l.email}</td>
+                  <td>
+                    <button onclick="app.openDetails('${l.id}')">Details</button>
+                    <button onclick="app.verwijderLeerling('${l.id}')">Verwijder</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </section>
 
-loggedIn ? renderApp() : renderLogin();
-</script>
-</body>
-</html>
+        <section id="detailsSectie" style="display:none;">
+          <h2>Leerling Details</h2>
+          <button onclick="app.sluitDetails()">Terug</button>
+          <div id="detailsContent"></div>
+        </section>
+
+        <section id="mailSectie">
+          <h2>Mail doorsturen</h2>
+          <label>Ontvanger E-mail</label>
+          <input type="email" id="mailTo" placeholder="voorbeeld@school.be" />
+          <label>Onderwerp</label>
+          <input type="text" id="mailSubject" placeholder="Onderwerp" />
+          <label>Bericht</label>
+          <textarea id="mailBody" class="mail-area" placeholder="Typ hier je bericht"></textarea>
+          <button onclick="app.sendMail()">Verstuur mail (simulatie)</button>
+          <p id="mailStatus" style="color:green;"></p>
+        </section>
+      </main>
+    `;
+  }
+
+  function renderLeerlingDetails(id) {
+    const leerling = state.leerlingen.find(l => l.id === id);
+    if (!leerling) return;
+
+    // Maak tabel voor scores en aanwezigheden
+    let scoresRows = '';
+    const vakken = ['Nederlands', 'Engels', 'Wiskunde', 'Geschiedenis', 'Wetenschappen'];
+    vakken.forEach(vak => {
+      const cijfer = leerling.scores[vak] || '';
+      scoresRows += `
+        <tr>
+          <td>${vak}</td>
+          <td><input type="number" min="0" max="20" step="0.1" value="${cijfer}" onchange="app.updateScore('${id}', '${vak}', this.value)" /></td>
+        </tr>
+      `;
+    });
+
+    // Aanwezigheid tabel (laatste 7 dagen)
+    let aanwezigRows = '';
+    const vandaag = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(vandaag);
+      d.setDate(vandaag.getDate() - i);
+      const datumStr = d.toISOString().slice(0,10);
+      const aanwezig = leerling.aanwezigheden[datumStr] || false;
+      aanwezigRows += `
+        <tr>
+          <td>${datumStr}</td>
+          <td><input type="checkbox" ${aanwezig ? 'checked' : ''} onchange="app.updateAanwezigheid('${id}', '${datumStr}', this.checked)" /></td>
+        </tr>
+      `;
+    }
+
+    document.getElementById('detailsContent').innerHTML = `
+      <h3>${leerling.naam} - Details</h3>
+      <h4>Scores invullen</h4>
+      <table>
+        <thead><tr><th>Vak
