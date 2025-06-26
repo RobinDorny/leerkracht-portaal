@@ -1,88 +1,494 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Leerkrachtenportaal - Scores</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #f4f6f9;
-      padding: 20px;
-    }
-    h1 {
-      color: #2c3e50;
-    }
-    .score-section {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      max-width: 500px;
-      margin: auto;
-    }
-    input, button {
-      padding: 10px;
-      margin: 5px 0;
-      width: 100%;
-      font-size: 16px;
-    }
-    button {
-      background: #3498db;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    ul {
-      list-style: none;
-      padding: 0;
-    }
-    li {
-      padding: 8px;
-      border-bottom: 1px solid #ddd;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Directeur Dashboard</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f0f3f7;
+    margin: 0; padding: 0;
+  }
+  header {
+    background: #2a3f54;
+    color: white;
+    padding: 15px 20px;
+    font-size: 1.5rem;
+    text-align: center;
+  }
+  main {
+    max-width: 1100px;
+    margin: 20px auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(300px,1fr));
+    gap: 20px;
+    padding: 0 20px 40px;
+  }
+  section {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+    padding: 20px;
+  }
+  h2 {
+    margin-top: 0;
+    border-bottom: 2px solid #2a3f54;
+    padding-bottom: 5px;
+  }
+  button {
+    background-color: #2a3f54;
+    border: none;
+    color: white;
+    padding: 8px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  button:hover {
+    background-color: #1f2d3f;
+  }
+  input, textarea, select {
+    width: 100%;
+    padding: 7px;
+    margin-top: 6px;
+    margin-bottom: 12px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+  }
+  ul {
+    list-style-type: none;
+    padding-left: 0;
+  }
+  ul li {
+    padding: 6px 4px;
+    border-bottom: 1px solid #ddd;
+  }
+  .small-text {
+    font-size: 0.85rem;
+    color: #555;
+  }
+  .status-open {
+    color: red;
+    font-weight: bold;
+  }
+  .status-closed {
+    color: green;
+    font-weight: bold;
+  }
+</style>
 </head>
 <body>
-  <h1>Leerlingenscores</h1>
-  <div class="score-section">
-    <input type="text" id="studentName" placeholder="Naam van de leerling" />
-    <input type="number" id="studentScore" placeholder="Score op 100" />
-    <button onclick="addScore()">Score toevoegen</button>
 
-    <h3>Scorelijst</h3>
-    <ul id="scoreList"></ul>
-  </div>
+<header>Directeur Dashboard - Schoolbeheer</header>
 
-  <script>
-    const scoreListElement = document.getElementById('scoreList');
-    let scores = JSON.parse(localStorage.getItem('scores') || '[]');
+<main>
+  <!-- Leidinggeven & Taken -->
+  <section id="tasksSection">
+    <h2>Leidinggeven & Taken</h2>
+    <form id="taskForm">
+      <input type="text" id="taskInput" placeholder="Nieuwe taak omschrijving" required />
+      <select id="taskAssignedTo" required>
+        <option value="" disabled selected>Toewijzen aan...</option>
+        <option value="Leraren">Leraren</option>
+        <option value="Personeel">Personeel</option>
+      </select>
+      <button type="submit">Taak toevoegen</button>
+    </form>
+    <ul id="tasksList"></ul>
+  </section>
 
-    function renderScores() {
-      scoreListElement.innerHTML = scores.map(score => `<li><strong>${score.name}</strong>: ${score.score}/100</li>`).join('');
+  <!-- Beleid maken en uitvoeren -->
+  <section id="policySection">
+    <h2>Beleid beheren</h2>
+    <textarea id="policyText" rows="8" placeholder="Schrijf hier het schoolbeleid..."></textarea>
+    <button id="savePolicyBtn">Opslaan</button>
+    <p class="small-text" id="policySavedMsg" style="display:none;color:green;">Beleid opgeslagen!</p>
+  </section>
+
+  <!-- Contacten -->
+  <section id="contactsSection">
+    <h2>Contactpersonen</h2>
+    <form id="contactForm">
+      <input type="text" id="contactName" placeholder="Naam ouder / externe partij" required />
+      <input type="text" id="contactRole" placeholder="Relatie / functie" required />
+      <input type="text" id="contactPhone" placeholder="Telefoonnummer" />
+      <input type="email" id="contactEmail" placeholder="E-mail" />
+      <button type="submit">Contact toevoegen</button>
+    </form>
+    <ul id="contactsList"></ul>
+  </section>
+
+  <!-- Financiën beheren -->
+  <section id="financeSection">
+    <h2>Financiën beheren</h2>
+    <form id="financeForm">
+      <input type="text" id="financeDesc" placeholder="Omschrijving" required />
+      <input type="number" id="financeAmount" placeholder="Bedrag (€)" required />
+      <select id="financeType" required>
+        <option value="" disabled selected>Type</option>
+        <option value="Inkomsten">Inkomsten</option>
+        <option value="Uitgaven">Uitgaven</option>
+      </select>
+      <button type="submit">Boeking toevoegen</button>
+    </form>
+    <ul id="financeList"></ul>
+    <p><strong>Totaal saldo: €<span id="financeTotal">0.00</span></strong></p>
+  </section>
+
+  <!-- Plannen maken -->
+  <section id="planningSection">
+    <h2>Plannen & Projecten</h2>
+    <form id="planForm">
+      <input type="text" id="planName" placeholder="Naam project/plan" required />
+      <textarea id="planDesc" rows="3" placeholder="Beschrijving" required></textarea>
+      <input type="date" id="planDeadline" required />
+      <button type="submit">Plan toevoegen</button>
+    </form>
+    <ul id="plansList"></ul>
+  </section>
+
+  <!-- Problemen oplossen -->
+  <section id="issuesSection">
+    <h2>Problemen & Oplossingen</h2>
+    <form id="issueForm">
+      <input type="text" id="issueTitle" placeholder="Probleemtitel" required />
+      <textarea id="issueDesc" rows="3" placeholder="Probleem beschrijving" required></textarea>
+      <select id="issueStatus" required>
+        <option value="Open" selected>Open</option>
+        <option value="Afgehandeld">Afgehandeld</option>
+      </select>
+      <button type="submit">Probleem toevoegen</button>
+    </form>
+    <ul id="issuesList"></ul>
+  </section>
+
+  <!-- Veiligheid -->
+  <section id="safetySection">
+    <h2>Veiligheid & Welzijn</h2>
+    <form id="safetyForm">
+      <textarea id="safetyReport" rows="4" placeholder="Rapporteer veiligheids- of welzijnsincident" required></textarea>
+      <button type="submit">Rapport indienen</button>
+    </form>
+    <ul id="safetyList"></ul>
+  </section>
+</main>
+
+<script>
+  // --- HULP FUNCTIES ---
+
+  // Data opslaan & laden in localStorage
+  function saveData(key, data) {
+    localStorage.setItem(key, JSON.stringify(data));
+  }
+  function loadData(key) {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : [];
+  }
+
+  // Taken beheren
+  const tasksKey = 'schoolTasks';
+  function renderTasks() {
+    const tasks = loadData(tasksKey);
+    const ul = document.getElementById('tasksList');
+    if (tasks.length === 0) {
+      ul.innerHTML = '<li>Geen taken</li>';
+      return;
     }
+    ul.innerHTML = tasks.map((t,i) => `
+      <li>
+        <b>${t.description}</b> <i>(${t.assignedTo})</i>
+        <button onclick="deleteTask(${i})" style="float:right;color:red;background:none;border:none;cursor:pointer;">✖</button>
+      </li>`).join('');
+  }
+  function addTask(description, assignedTo) {
+    const tasks = loadData(tasksKey);
+    tasks.push({ description, assignedTo });
+    saveData(tasksKey, tasks);
+    renderTasks();
+  }
+  function deleteTask(index) {
+    const tasks = loadData(tasksKey);
+    tasks.splice(index,1);
+    saveData(tasksKey, tasks);
+    renderTasks();
+  }
 
-    function addScore() {
-      const nameInput = document.getElementById('studentName');
-      const scoreInput = document.getElementById('studentScore');
-      const name = nameInput.value.trim();
-      const score = parseInt(scoreInput.value);
+  // Beleid beheren
+  const policyKey = 'schoolPolicy';
+  function loadPolicy() {
+    const txt = localStorage.getItem(policyKey) || '';
+    document.getElementById('policyText').value = txt;
+  }
+  function savePolicy() {
+    const txt = document.getElementById('policyText').value;
+    localStorage.setItem(policyKey, txt);
+    const msg = document.getElementById('policySavedMsg');
+    msg.style.display = 'inline';
+    setTimeout(() => msg.style.display = 'none', 2000);
+  }
 
-      if (!name || isNaN(score)) {
-        alert("Vul zowel een naam als een geldige score in.");
-        return;
-      }
-
-      scores.push({ name, score });
-      localStorage.setItem('scores', JSON.stringify(scores));
-      renderScores();
-
-      nameInput.value = '';
-      scoreInput.value = '';
+  // Contactpersonen
+  const contactsKey = 'schoolContacts';
+  function renderContacts() {
+    const contacts = loadData(contactsKey);
+    const ul = document.getElementById('contactsList');
+    if (contacts.length === 0) {
+      ul.innerHTML = '<li>Geen contacten</li>';
+      return;
     }
+    ul.innerHTML = contacts.map((c,i) => `
+      <li><b>${c.name}</b> - ${c.role} 
+      ${c.phone ? '- Tel: ' + c.phone : ''}
+      ${c.email ? '- E-mail: ' + c.email : ''}
+      <button onclick="deleteContact(${i})" style="float:right;color:red;background:none;border:none;cursor:pointer;">✖</button></li>
+    `).join('');
+  }
+  function addContact(name, role, phone, email) {
+    const contacts = loadData(contactsKey);
+    contacts.push({ name, role, phone, email });
+    saveData(contactsKey, contacts);
+    renderContacts();
+  }
+  function deleteContact(index) {
+    const contacts = loadData(contactsKey);
+    contacts.splice(index,1);
+    saveData(contactsKey, contacts);
+    renderContacts();
+  }
 
-    renderScores();
-  </script>
+  // Financiën beheren
+  const financeKey = 'schoolFinance';
+  function renderFinance() {
+    const finance = loadData(financeKey);
+    const ul = document.getElementById('financeList');
+    if (finance.length === 0) {
+      ul.innerHTML = '<li>Geen boekingen</li>';
+      document.getElementById('financeTotal').innerText = '0.00';
+      return;
+    }
+    ul.innerHTML = finance.map((f,i) => `
+      <li>
+        ${f.desc} - €${f.amount.toFixed(2)} (${f.type})
+        <button onclick="deleteFinance(${i})" style="float:right;color:red;background:none;border:none;cursor:pointer;">✖</button>
+      </li>
+    `).join('');
+    // Bereken totaal
+    const total = finance.reduce((sum,f) => f.type === 'Inkomsten' ? sum + f.amount : sum - f.amount, 0);
+    document.getElementById('financeTotal').innerText = total.toFixed(2);
+  }
+  function addFinance(desc, amount, type) {
+    const finance = loadData(financeKey);
+    finance.push({ desc, amount: parseFloat(amount), type });
+    saveData(financeKey, finance);
+    renderFinance();
+  }
+  function deleteFinance(index) {
+    const finance = loadData(financeKey);
+    finance.splice(index,1);
+    saveData(financeKey, finance);
+    renderFinance();
+  }
+
+  // Plannen maken
+  const plansKey = 'schoolPlans';
+  function renderPlans() {
+    const plans = loadData(plansKey);
+    const ul = document.getElementById('plansList');
+    if (plans.length === 0) {
+      ul.innerHTML = '<li>Geen plannen</li>';
+      return;
+    }
+    ul.innerHTML = plans.map((p,i) => `
+      <li>
+        <b>${p.name}</b> - Deadline: ${p.deadline} 
+        <p>${p.description}</p>
+        <button onclick="deletePlan(${i})" style="color:red;background:none;border:none;cursor:pointer;">✖</button>
+      </li>
+    `).join('');
+  }
+  function addPlan(name, description, deadline) {
+    const plans = loadData(plansKey);
+    plans.push({ name, description, deadline });
+    saveData(plansKey, plans);
+    renderPlans();
+  }
+  function deletePlan(index) {
+    const plans = loadData(plansKey);
+    plans.splice(index,1);
+    saveData(plansKey, plans);
+    renderPlans();
+  }
+
+  // Problemen oplossen
+  const issuesKey = 'schoolIssues';
+  function renderIssues() {
+    const issues = loadData(issuesKey);
+    const ul = document.getElementById('issuesList');
+    if (issues.length === 0) {
+      ul.innerHTML = '<li>Geen problemen</li>';
+      return;
+    }
+    ul.innerHTML = issues.map((i,i2) => `
+      <li>
+        <b>${i.title}</b> - 
+        <span class="${i.status === 'Open' ? 'status-open' : 'status-closed'}">${i.status}</span>
+        <p>${i.description}</p>
+        <button onclick="toggleIssueStatus(${i2})" style="margin-right:8px;">Status wisselen</button>
+        <button onclick="deleteIssue(${i2})" style="color:red;background:none;border:none;cursor:pointer;">✖</button>
+      </li>
+    `).join('');
+  }
+  function addIssue(title, description, status) {
+    const issues = loadData(issuesKey);
+    issues.push({ title, description, status });
+    saveData(issuesKey, issues);
+    renderIssues();
+  }
+  function toggleIssueStatus(index) {
+    const issues = loadData(issuesKey);
+    issues[index].status = (issues[index].status === 'Open') ? 'Afgehandeld' : 'Open';
+    saveData(issuesKey, issues);
+    renderIssues();
+  }
+  function deleteIssue(index) {
+    const issues = loadData(issuesKey);
+    issues.splice(index,1);
+    saveData(issuesKey, issues);
+    renderIssues();
+  }
+
+  // Veiligheid rapporten
+  const safetyKey = 'schoolSafetyReports';
+  function renderSafety() {
+    const reports = loadData(safetyKey);
+    const ul = document.getElementById('safetyList');
+    if (reports.length === 0) {
+      ul.innerHTML = '<li>Geen rapporten</li>';
+      return;
+    }
+    ul.innerHTML = reports.map((r,i) => `
+      <li>
+        ${r.report}
+        <button onclick="deleteSafety(${i})" style="color:red;background:none;border:none;cursor:pointer;float:right;">✖</button>
+      </li>
+    `).join('');
+  }
+  function addSafety(report) {
+    const reports = loadData(safetyKey);
+    reports.push({ report });
+    saveData(safetyKey, reports);
+    renderSafety();
+  }
+  function deleteSafety(index) {
+    const reports = loadData(safetyKey);
+    reports.splice(index,1);
+    saveData(safetyKey, reports);
+    renderSafety();
+  }
+
+  // --- EVENT LISTENERS ---
+
+  // Taken form
+  document.getElementById('taskForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const desc = document.getElementById('taskInput').value.trim();
+    const assignedTo = document.getElementById('taskAssignedTo').value;
+    if(desc && assignedTo) {
+      addTask(desc, assignedTo);
+      e.target.reset();
+    }
+  });
+
+  // Beleid opslaan
+  document.getElementById('savePolicyBtn').addEventListener('click', () => {
+    savePolicy();
+  });
+
+  // Contactpersonen form
+  document.getElementById('contactForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const name = document.getElementById('contactName').value.trim();
+    const role = document.getElementById('contactRole').value.trim();
+    const phone = document.getElementById('contactPhone').value.trim();
+    const email = document.getElementById('contactEmail').value.trim();
+    if(name && role) {
+      addContact(name, role, phone, email);
+      e.target.reset();
+    }
+  });
+
+  // Financiën form
+  document.getElementById('financeForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const desc = document.getElementById('financeDesc').value.trim();
+    const amount = parseFloat(document.getElementById('financeAmount').value);
+    const type = document.getElementById('financeType').value;
+    if(desc && !isNaN(amount) && type) {
+      addFinance(desc, amount, type);
+      e.target.reset();
+    }
+  });
+
+  // Plannen form
+  document.getElementById('planForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const name = document.getElementById('planName').value.trim();
+    const desc = document.getElementById('planDesc').value.trim();
+    const deadline = document.getElementById('planDeadline').value;
+    if(name && desc && deadline) {
+      addPlan(name, desc, deadline);
+      e.target.reset();
+    }
+  });
+
+  // Problemen form
+  document.getElementById('issueForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const title = document.getElementById('issueTitle').value.trim();
+    const desc = document.getElementById('issueDesc').value.trim();
+    const status = document.getElementById('issueStatus').value;
+    if(title && desc && status) {
+      addIssue(title, desc, status);
+      e.target.reset();
+    }
+  });
+
+  // Veiligheid form
+  document.getElementById('safetyForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const report = document.getElementById('safetyReport').value.trim();
+    if(report) {
+      addSafety(report);
+      e.target.reset();
+    }
+  });
+
+  // --- INIT ---
+
+  function init() {
+    renderTasks();
+    loadPolicy();
+    renderContacts();
+    renderFinance();
+    renderPlans();
+    renderIssues();
+    renderSafety();
+  }
+
+  init();
+
+  // Expose delete functions globally for inline onclick usage
+  window.deleteTask = deleteTask;
+  window.deleteContact = deleteContact;
+  window.deleteFinance = deleteFinance;
+  window.deletePlan = deletePlan;
+  window.toggleIssueStatus = toggleIssueStatus;
+  window.deleteIssue = deleteIssue;
+  window.deleteSafety = deleteSafety;
+
+</script>
+
 </body>
 </html>
